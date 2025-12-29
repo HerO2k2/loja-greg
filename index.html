@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>MERCADO CLANDESTINO — Fornecedor Gregory Walton</title>
+
+<!-- FONTE PIXEL -->
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+
+<style>
+body{
+    background:
+        radial-gradient(circle at top, #3b2a1a 0%, #1b120a 60%, #0e0a06 100%);
+    color:#e6dcc6;
+    font-family:'VT323', monospace;
+    margin:20px;
+    font-size:20px;
+}
+
+h1,h2{
+    color:#d6b98c;
+    border-bottom:2px solid #6b5238;
+    text-shadow:2px 2px 3px #000;
+}
+
+.section{
+    margin-bottom:30px;
+    background:
+        linear-gradient(135deg, #2a1c12, #1c130c);
+    padding:15px;
+    border:2px solid #4b3825;
+    box-shadow:
+        inset 0 0 20px rgba(0,0,0,0.7),
+        0 5px 15px rgba(0,0,0,0.8);
+}
+
+.item{
+    border-bottom:1px dashed #6b5238;
+    padding:8px 0;
+}
+
+button{
+    background:
+        linear-gradient(#3a2a1a, #2a1c12);
+    color:#f0e6d2;
+    border:2px solid #6b5238;
+    padding:4px 10px;
+    cursor:pointer;
+    font-family:'VT323', monospace;
+    font-size:18px;
+}
+button:hover{
+    background:
+        linear-gradient(#5a3e25, #3a2a1a);
+}
+
+input[type="number"]{
+    background:#1c140c;
+    color:#e6d39a;
+    border:2px solid #6b5238;
+    padding:4px;
+    font-family:'VT323', monospace;
+    font-size:18px;
+}
+
+.money-box{
+    background:
+        linear-gradient(135deg, #24180f, #16100a);
+    padding:12px;
+    border:2px solid #6b5238;
+    margin-bottom:20px;
+    box-shadow:0 0 15px rgba(0,0,0,0.8);
+}
+
+.log{
+    background:
+        linear-gradient(#140e08, #0c0805);
+    border:2px solid #3a2a1a;
+    padding:10px;
+    max-height:220px;
+    overflow-y:auto;
+    font-size:18px;
+}
+
+.small{
+    font-size:16px;
+    color:#b9a57a;
+}
+
+.volume-box{
+    margin-top:8px;
+    font-size:18px;
+}
+
+input[type="range"]{
+    width:120px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>☠ MERCADO CLANDESTINO — FORNECEDOR Gregory Walton</h1>
+<p class="small">Loja virtual • Compra e venda sob risco do comprador</p>
+
+<div class="money-box">
+💰 Dinheiro disponível: $
+<input type="number" id="money">
+<div class="volume-box">
+🔊 Volume:
+<input type="range" id="volume" min="0" max="1" step="0.01" value="0.6">
+</div>
+</div>
+
+<div id="store"></div>
+
+<h2>📜 Registro de Transações</h2>
+<div class="log" id="log"></div>
+
+<!-- SONS -->
+<audio id="sndBuy" src="sons/comprar.mp3"></audio>
+<audio id="sndSell" src="sons/vender.mp3"></audio>
+<audio id="sndError" src="sons/erro.mp3"></audio>
+
+<script>
+const moneyInput = document.getElementById("money");
+const logBox = document.getElementById("log");
+const volumeControl = document.getElementById("volume");
+
+const sndBuy = document.getElementById("sndBuy");
+const sndSell = document.getElementById("sndSell");
+const sndError = document.getElementById("sndError");
+
+/* ===== LOCAL STORAGE ===== */
+const savedMoney = localStorage.getItem("skull_money");
+moneyInput.value = savedMoney !== null ? savedMoney : 1000;
+
+moneyInput.addEventListener("change", ()=>{
+    localStorage.setItem("skull_money", moneyInput.value);
+});
+
+/* ===== VOLUME ===== */
+[sndBuy, sndSell, sndError].forEach(s => s.volume = volumeControl.value);
+
+volumeControl.addEventListener("input", ()=>{
+    let v = volumeControl.value;
+    sndBuy.volume = v;
+    sndSell.volume = v;
+    sndError.volume = v;
+});
+
+/* ===== FUNÇÕES ===== */
+function play(sound){
+    sound.currentTime = 0;
+    sound.play();
+}
+
+function log(msg){
+    logBox.innerHTML = msg + "<br>" + logBox.innerHTML;
+}
+
+function buy(price,name){
+    let money = Number(moneyInput.value);
+    if(money < price){
+        play(sndError);
+        log("❌ Fundos insuficientes: " + name);
+        return;
+    }
+    money -= price;
+    moneyInput.value = money;
+    localStorage.setItem("skull_money", money);
+    play(sndBuy);
+    log("✔ Comprado: " + name + " (-$" + price + ")");
+}
+
+function sell(price,name){
+    let gain = Math.floor(price * 0.3);
+    let money = Number(moneyInput.value) + gain;
+    moneyInput.value = money;
+    localStorage.setItem("skull_money", money);
+    play(sndSell);
+    log("↩ Vendido: " + name + " (+$" + gain + ")");
+}
+
+/* ===== LOJA ===== */
+const categories = [
+{
+title:"ARMAS — CURTO ALCANCE",
+items:[
+["Soco Inglês",40,"1d6 + LUTA","Impacto"],
+["Luvas com Reforço",40,"1d6 + LUTA","Impacto"],
+["Faca de Cozinha",40,"1d6 + CORTE","Corte"],
+["Faca Militar",60,"1d8 + CORTE","Corte"],
+["Estilete",40,"1d6 + CORTE","Corte"],
+["Bisturi",40,"1d6 + CORTE","Corte"],
+["Canivete",40,"1d6 + CORTE","Corte"],
+["Chave de Fenda",40,"1d6 + Corte", "Corte"],
+["Tesoura",40,"1d6 + CORTE","Perfuração"],
+["Furador de Gelo",40,"1d6 + CORTE","Perfuração"],
+["Agulha grossa",40,"1d6 + CORTE", "Perfuração"],
+["Martelo Pequeno",60,"1d8 + LUTA","Impacto"],
+["Martelo de Demolição",100,"1d10 + LUTA","Impacto"],
+["Porrete de Madeira",60,"1d8 + LUTA","Impacto"],
+["Taco de Beisebol",100,"1d10 + LUTA","Impacto"],
+["Facão de Mato",75,"2d4 + CORTE","Corte"],
+["Machete",75,"1d8 + CORTE","Corte"],
+["Bastão Retrátil",100,"1d8 + LUTA","Impacto"],
+["Bastão Taser",160,"1d6 + 1d4 + LUTA","Impacto + Queimadura"],
+["Tocha Improvisada",30,"1d6 + SOBREVIVÊNCIA","Queimadura"],
+["Adaga Ritual",100,"1d8 + OCULTISMO","Ocultismo"],
+["Rosário Pontiagudo",40,"1d6 + OCULTISMO","Ocultismo"],
+["Cruz de Madeira",35,"1d6 + OCULTISMO","Ocultismo"]
+]
+},
+
+{
+title:"ARMAS — MÉDIO ALCANCE",
+items:[
+["Pé de Cabra",80,"1d8 + LUTA","Impacto"],
+["Cassetete Policial",120,"2d6 + LUTA","Impacto"],
+["Sabre",110,"1d10 + CORTE","Corte"],
+["Espada Curta",130,"2d6 + CORTE","Corte"],
+["Katana",300,"2d8 + CORTE","Corte"],
+["Lança",160,"2d6 + CORTE","Perfuração"],
+["Alabarda",425,"2d6 + 1d4 + CORTE","Corte + Perfuração"],
+["Machado Tático",280,"2d8 + CORTE","Corte"],
+["Foice Improvisada",80,"1d8 + CORTE", "Corte"],
+["Espeto Metálico",80,"1d8 + CORTE", "Perfuração"],
+["Tridente",180,"2d6 + CORTE","Perfuração"],
+["Espada Ritual",1200,"2d6 + 1d4 + CORTE + OCULTISMO","Ocultismo"],
+["Lança Cerimonial",1000,"1d8 + 1d4 + CORTE + RITUAL", "Corte + Ritual"]
+]
+},
+
+{
+title:"ARMAS — LONGO ALCANCE",
+items:[
+["Arco Tradicional",180,"1d8 + SOBREVIVÊNCIA","Perfuração"],
+["Arco Composto",400,"2d8 + SOBREVIVÊNCIA","Perfuração"],
+["Besta Leve",200,"1d10 + SOBREVIVÊNCIA","Perfuração"],
+["Besta de Alta Pressão",1600,"2d10 + 1d6 + SOBREVIVÊNCIA","Perfuração"],
+["Pistola 9mm",200,"1d8 + TÁTICA","Perfuração"],
+["Revolver",180,"2d4 + TÁTICA","Perfuração"],
+["Revolver Colt D",300,"2d6 + TÁTICA","Perfuração"],
+["Magnum .44",1800,"3d6 + TÁTICA","Perfuração"],
+["SMG (9mm)",3200,"2d10 + TÁTICA","Perfuração"],
+["Rifle de Assalto (5.56mm)",4000,"3d8 + TÁTICA","Perfuração"],
+["Rifle de Caça (.308)",2500,"2d12 + SOBREVIVÊNCIA","Perfuração"],
+["Rifle de Precisão (.338)",6500,"4d10 + TÁTICA","Perfuração"],
+["Escopeta Tática",3500,"3d8 + TÁTICA","Perfuração"],
+["Escopeta de Cano Duplo",700,"2d8 + SOBREVIVÊNCIA","Perfuração"],
+["Espingarda de Repetição",1200,"2d10 + SOBREVIVÊNCIA","Perfuração"],
+["Bazooka",10000,"8d10","Queimadura"]
+]
+},
+
+{
+title:"ARREMESSÁVEIS",
+items:[
+["Prego",2,"1d4","Perfuração"],
+["Kunai",20,"1d6","Perfuração"],
+["Shuriken",20,"1d6","Corte"],
+["Bola de Tênis",5,"1d4","Impacto"],
+["Granada Explosiva",2000,"4d10","Queimadura"],
+["Granada de Fumaça",300,"Névoa por 2 turnos","cega por 2 turnos (visão -2)"],
+["Granada de Luz",400,"1d8","cega por um turno (resistível)"],
+["Granda de Som",40,"1d6","Impacto + 50% de dano em certas criaturas"]
+]
+},
+
+{
+title:"ARMADURAS & PROTEÇÕES",
+items:[
+["Armadura de Metal",150,"Corte +1","Proteção"],
+["Armadura de Couro",100,"Impacto +1","Proteção"],
+["Colete Leve",200,"Perfuração +1","Proteção"],
+["Colete Pesado",800,"Perfuração +4","Proteção"],
+["Colete SWAT",1300,"Perfuração +4, +5 PV","Proteção"],
+["Colete Militar Especial",2200,"Perfuração +6, +10 PV","Proteção"],
+["Capacete Balístico",300,"Perfuração +1, +1 PV","Proteção"],
+["Braçadeira Militar Esp.",750,"Corte +3, Impacto +3","Proteção"],
+["Braçadeira Tática Leve",300,"Impacto +2","Proteção"],
+["Grevas de Aço",300,"Corte +2","Proteção"],
+["Máscara Anti-Ritual",600,"Ritual +3","Proteção"],
+["Amuleto de Proteção",500,"Ocultismo +2","Proteção"],
+["Túnica de Exorcismo",700,"Ocultismo +3, Ritual +1","Proteção"],
+["Escudo Improvisado",100,"Impacto +2","Proteção, bloqueio manual"],
+["Botas de Combate",200,"Atletismo +1, Impacto +1","Proteção"],
+["Roupa Resistente a Fogo",1000,"Queimadura +4","Proteção"],
+["Casaco de Couro Grosso",250,"Impacto +2","Proteção"]
+]
+},
+
+{
+title:"ITENS UTILITÁRIOS",
+items:[
+["Algema",100,"Restringe alvo","uso fora de combate"],
+["Atadura",25,"Cura 1d4","cura no turno seguinte e usa todas as ações"],
+["Kit Médico",300,"Cura 1d20","1 uso por combate, 2 turnos para curar, usa todas as ações"],
+["Kit Arrombamento",200,"3 gazuas, vantagem em FURTIVIDADE","apenas fechaduras"],
+["Kit Tirolesa",250,"Teste de ATLETISMO ou ACROBACIA","1 uso por área"],
+["Kit Acampamento",100,"Itens para acampar","Utilitário"],
+["Kit Engenheiro",220,"Ferramentas, fios, etc","Útil para Engenheiros"],
+["Desfibrilador Portátil",500,"Revive aliado","cura"],
+["Notebook",300,"Pesquisa e dados","utilitário"],
+["Lanterna",30,"Iluminação","ilumina áreas escuras ou subterrâneas"],
+["Rádio Comunicador",150,"Comunicação global","utilitário"],
+["Jaleco de Laboratório",15,"Estilo","Decorativo"],
+["Caderno com Caneta",10,"Registrar informações","utilitário"],
+["Óculos",120,"PERCEPÇÃO +1","utilitário"],
+["Mapa: EUA",100,"Mostra as áreas permitidas nos EUA","utilitário"],
+["Mapa: Mundi",500,"Mostra as áreas permitidas no Mundo","utilitário"],
+["Água Benta (máx - 3)",5,"os efeitos variam","útil contra certas criaturas"],
+["Alho (máx - 3)",1,"bom tempero","útil contra certas criaturas"],
+["Comida",10,"Recupera 1d6","uso fora de combate"]
+]
+},
+
+{
+title:"MUNIÇÕES",
+items:[
+["Flecha (1)",10,"Perfuração","Munição Rústica"],
+["Virola (1)",15,"Perfuração","Munição Rústica"],
+["9mm (6)",15,"Perfuração","Munição"],
+[".44 Magnum (6)",30,"Perfuração","Munição"],
+["Chumbo (2)",45, "Perfuração","Munição"],
+[".308 Rifle de caça (4)",250, "Perfuração","Munição"],
+[".338 Rifle de Assalto (30)",500, "Perfuração","Munição"],
+["5.56mm (30)",500,"Perfuração","Munição"],
+["Balas Flamejantes (2)",100,"+6 fogo","Dano de Queimadura"],
+["Balas Criogênicas (2)",125,"-2 dano base","1d20 Chance de congelar"],
+["Balas de Prata - Igreja (1)",200,"dano aumentado contra certas criaturas","Especial"]
+]
+}
+
+];
+
+const storeDiv = document.getElementById("store");
+
+categories.forEach(cat=>{
+    let html = `<div class="section"><h2>${cat.title}</h2>`;
+    cat.items.forEach(i=>{
+        html += `
+        <div class="item">
+        <b>${i[0]}</b> — $${i[1]} | ${i[2]} | ${i[3]}<br>
+        <button onclick="buy(${i[1]},'${i[0]}')">Comprar</button>
+        <button onclick="sell(${i[1]},'${i[0]}')">Vender</button>
+        </div>`;
+    });
+    html += "</div>";
+    storeDiv.innerHTML += html;
+});
+</script>
+
+</body>
+</html>
+
