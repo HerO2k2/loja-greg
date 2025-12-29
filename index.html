@@ -4,13 +4,11 @@
 <meta charset="UTF-8">
 <title>MERCADO CLANDESTINO — Fornecedor Gregory Walton</title>
 
-<!-- FONTE PIXEL -->
 <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 
 <style>
 body{
-    background:
-        radial-gradient(circle at top, #3b2a1a 0%, #1b120a 60%, #0e0a06 100%);
+    background: radial-gradient(circle at top, #3b2a1a 0%, #1b120a 60%, #0e0a06 100%);
     color:#e6dcc6;
     font-family:'VT323', monospace;
     margin:20px;
@@ -25,13 +23,10 @@ h1,h2{
 
 .section{
     margin-bottom:30px;
-    background:
-        linear-gradient(135deg, #2a1c12, #1c130c);
+    background: linear-gradient(135deg, #2a1c12, #1c130c);
     padding:15px;
     border:2px solid #4b3825;
-    box-shadow:
-        inset 0 0 20px rgba(0,0,0,0.7),
-        0 5px 15px rgba(0,0,0,0.8);
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.7), 0 5px 15px rgba(0,0,0,0.8);
 }
 
 .item{
@@ -39,33 +34,39 @@ h1,h2{
     padding:8px 0;
 }
 
+.item span.qty-box{
+    color:#4bff4b;
+    font-weight:bold;
+    margin-left:5px;
+    width:50px;
+}
+
 button{
-    background:
-        linear-gradient(#3a2a1a, #2a1c12);
+    background: linear-gradient(#3a2a1a, #2a1c12);
     color:#f0e6d2;
     border:2px solid #6b5238;
     padding:4px 10px;
     cursor:pointer;
     font-family:'VT323', monospace;
     font-size:18px;
+    margin-top:5px;
 }
 button:hover{
-    background:
-        linear-gradient(#5a3e25, #3a2a1a);
+    background: linear-gradient(#5a3e25, #3a2a1a);
 }
 
 input[type="number"]{
     background:#1c140c;
-    color:#e6d39a;
+    color:#4bff4b;
     border:2px solid #6b5238;
     padding:4px;
     font-family:'VT323', monospace;
     font-size:18px;
+    width:50px;
 }
 
 .money-box{
-    background:
-        linear-gradient(135deg, #24180f, #16100a);
+    background: linear-gradient(135deg, #24180f, #16100a);
     padding:12px;
     border:2px solid #6b5238;
     margin-bottom:20px;
@@ -73,8 +74,7 @@ input[type="number"]{
 }
 
 .log{
-    background:
-        linear-gradient(#140e08, #0c0805);
+    background: linear-gradient(#140e08, #0c0805);
     border:2px solid #3a2a1a;
     padding:10px;
     max-height:220px;
@@ -95,6 +95,28 @@ input[type="number"]{
 input[type="range"]{
     width:120px;
 }
+
+#cart{
+    background: linear-gradient(135deg,#1c140c,#100c08);
+    border:2px solid #6b5238;
+    padding:10px;
+    margin-bottom:20px;
+    max-height:300px;
+    overflow-y:auto;
+}
+
+.cart-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:1px dashed #6b5238;
+    padding:4px 0;
+}
+.cart-total{
+    text-align:right;
+    font-weight:bold;
+    margin-top:10px;
+}
 </style>
 </head>
 
@@ -114,10 +136,13 @@ input[type="range"]{
 
 <div id="store"></div>
 
+<h2>🛒 Carrinho de Compras</h2>
+<div id="cart"></div>
+<button onclick="finalizarCompra()">Finalizar Compra</button>
+
 <h2>📜 Registro de Transações</h2>
 <div class="log" id="log"></div>
 
-<!-- SONS -->
 <audio id="sndBuy" src="sons/comprar.mp3"></audio>
 <audio id="sndSell" src="sons/vender.mp3"></audio>
 <audio id="sndError" src="sons/erro.mp3"></audio>
@@ -126,27 +151,21 @@ input[type="range"]{
 const moneyInput = document.getElementById("money");
 const logBox = document.getElementById("log");
 const volumeControl = document.getElementById("volume");
-
 const sndBuy = document.getElementById("sndBuy");
 const sndSell = document.getElementById("sndSell");
 const sndError = document.getElementById("sndError");
 
-/* ===== LOCAL STORAGE ===== */
-const savedMoney = localStorage.getItem("skull_money");
-moneyInput.value = savedMoney !== null ? savedMoney : 1000;
+const storeDiv = document.getElementById("store");
+const cartDiv = document.getElementById("cart");
+let cart = {}; // carrinho interno
 
-moneyInput.addEventListener("change", ()=>{
-    localStorage.setItem("skull_money", moneyInput.value);
-});
+/* ===== LOCAL STORAGE ===== */
+moneyInput.value = localStorage.getItem("skull_money") || 1000;
 
 /* ===== VOLUME ===== */
 [sndBuy, sndSell, sndError].forEach(s => s.volume = volumeControl.value);
-
-volumeControl.addEventListener("input", ()=>{
-    let v = volumeControl.value;
-    sndBuy.volume = v;
-    sndSell.volume = v;
-    sndError.volume = v;
+volumeControl.addEventListener("input", ()=> {
+    [sndBuy, sndSell, sndError].forEach(s => s.volume = volumeControl.value);
 });
 
 /* ===== FUNÇÕES ===== */
@@ -157,29 +176,6 @@ function play(sound){
 
 function log(msg){
     logBox.innerHTML = msg + "<br>" + logBox.innerHTML;
-}
-
-function buy(price,name){
-    let money = Number(moneyInput.value);
-    if(money < price){
-        play(sndError);
-        log("❌ Fundos insuficientes: " + name);
-        return;
-    }
-    money -= price;
-    moneyInput.value = money;
-    localStorage.setItem("skull_money", money);
-    play(sndBuy);
-    log("✔ Comprado: " + name + " (-$" + price + ")");
-}
-
-function sell(price,name){
-    let gain = Math.floor(price * 0.3);
-    let money = Number(moneyInput.value) + gain;
-    moneyInput.value = money;
-    localStorage.setItem("skull_money", money);
-    play(sndSell);
-    log("↩ Vendido: " + name + " (+$" + gain + ")");
 }
 
 /* ===== LOJA ===== */
@@ -332,26 +328,110 @@ items:[
 ["Balas de Prata - Igreja (1)",200,"dano aumentado contra certas criaturas","Especial"]
 ]
 }
-
 ];
 
-const storeDiv = document.getElementById("store");
-
+/* Renderiza Loja */
 categories.forEach(cat=>{
     let html = `<div class="section"><h2>${cat.title}</h2>`;
     cat.items.forEach(i=>{
+        const key = i[0].replace(/\s/g,"_");
         html += `
         <div class="item">
-        <b>${i[0]}</b> — $${i[1]} | ${i[2]} | ${i[3]}<br>
-        <button onclick="buy(${i[1]},'${i[0]}')">Comprar</button>
-        <button onclick="sell(${i[1]},'${i[0]}')">Vender</button>
+        <b>${i[0]}</b> — $${i[1]} | ${i[2]} | ${i[3]}
+        <input type="number" class="qty-box" id="qty_${key}" value="0" min="0">
+        <div>
+        <button onclick="adicionarCarrinho('${key}',${i[1]},'${i[0]}')">Adicionar ao Carrinho</button>
+        <button onclick="venderItem('${key}',${i[1]},'${i[0]}')">Vender</button>
+        </div>
         </div>`;
+        // Inicializa quantidade no localStorage se não existir
+        if(localStorage.getItem(key)===null) localStorage.setItem(key,0);
+        document.addEventListener("DOMContentLoaded", ()=> {
+            document.getElementById(`qty_${key}`).value = localStorage.getItem(key);
+        });
     });
     html += "</div>";
     storeDiv.innerHTML += html;
 });
+
+/* ===== CARRINHO ===== */
+function adicionarCarrinho(key,price,name){
+    if(!cart[key]) cart[key] = {price: price, name:name, amount:0};
+    cart[key].amount += 1;
+    renderCarrinho();
+}
+
+function renderCarrinho(){
+    cartDiv.innerHTML = "";
+    let total = 0;
+    for(let k in cart){
+        let item = cart[k];
+        total += item.price * item.amount;
+        cartDiv.innerHTML += `
+        <div class="cart-item">
+        ${item.name} x ${item.amount} — $${item.price} cada
+        <button onclick="removerCarrinho('${k}')">Remover</button>
+        </div>`;
+    }
+    cartDiv.innerHTML += `<div class="cart-total">Total: $${total}</div>`;
+}
+
+function removerCarrinho(key){
+    if(cart[key]){
+        cart[key].amount -=1;
+        if(cart[key].amount <=0) delete cart[key];
+        renderCarrinho();
+    }
+}
+
+/* ===== FINALIZAR COMPRA ===== */
+function finalizarCompra(){
+    let total = 0;
+    for(let k in cart){
+        total += cart[k].price * cart[k].amount;
+    }
+    let dinheiro = Number(moneyInput.value);
+    if(total>dinheiro){
+        play(sndError);
+        log(`❌ Fundos insuficientes para finalizar a compra! Total: $${total}`);
+        return;
+    }
+    // Deduz dinheiro
+    dinheiro -= total;
+    moneyInput.value = dinheiro;
+    localStorage.setItem("skull_money", dinheiro);
+    // Atualiza quantidade de cada item comprado
+    for(let k in cart){
+        let inputEl = document.getElementById(`qty_${k}`);
+        let atual = Number(inputEl.value) || 0;
+        inputEl.value = atual + cart[k].amount;
+        localStorage.setItem(k, inputEl.value);
+        log(`✔ Comprado: ${cart[k].name} x ${cart[k].amount} (-$${cart[k].price*cart[k].amount})`);
+    }
+    cart = {}; // esvazia carrinho
+    renderCarrinho();
+    play(sndBuy);
+}
+
+/* ===== VENDER ===== */
+function venderItem(key,price,name){
+    let inputEl = document.getElementById(`qty_${key}`);
+    let qtd = Number(inputEl.value) || 0;
+    if(qtd<=0){
+        play(sndError);
+        log(`❌ ${name} você não possui esse item.`);
+        return;
+    }
+    inputEl.value = qtd-1;
+    localStorage.setItem(key, inputEl.value);
+    let ganho = Math.floor(price*0.3);
+    let dinheiro = Number(moneyInput.value) + ganho;
+    moneyInput.value = dinheiro;
+    localStorage.setItem("skull_money", dinheiro);
+    log(`↩ Vendido: ${name} (+$${ganho})`);
+    play(sndSell);
+}
 </script>
 
 </body>
 </html>
-
